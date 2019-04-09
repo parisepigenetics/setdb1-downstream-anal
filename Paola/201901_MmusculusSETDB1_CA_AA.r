@@ -145,13 +145,13 @@ geneListKK05 <- sort(geneListKK05, decreasing = TRUE)
 
 ## Perform Gene Set Enrichment of WikiPaths.
 ewpgsCA1 <- GSEA(geneListCA1, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpCA1, title = "WikiPaths GSEA CA1")
+barplot(ewpgsCA1, title = "WikiPaths GSEA CA1")
 ewpgsKK1 <- GSEA(geneListKK1, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpKK1, title = "WikiPaths GSEA KK1")
+barplot(ewpgsKK1, title = "WikiPaths GSEA KK1")
 ewpgsCA05 <- GSEA(geneListCA05, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpCA05, showCategory = 30, title = "WikiPaths GSEA CA05")
+barplot(ewpgsCA05, showCategory = 30, title = "WikiPaths GSEA CA05")
 ewpgsKK05 <- GSEA(geneListKK05, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpKK05, showCategory = 30, title = "WikiPaths GSEA KK05")
+barplot(ewpgsKK05, showCategory = 30, title = "WikiPaths GSEA KK05")
 
 
 # MSIGDB enrichment
