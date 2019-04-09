@@ -13,54 +13,20 @@ library(cluster)
 library(mclust)
 
 ### Load/preprocess data ----------------------------------
-dKK <- read.table("deSeq2_DiffAnal_WT_KK.tab", header = TRUE)
-dCA <- read.table("deSeq2_DiffAnal_WT_CA.tab", header = TRUE)
-
-# Keep only the rows with complete data.
-dKK <- dKK[complete.cases(dKK),]
-dCA <- dCA[complete.cases(dCA),]
-
-# Keep only the significantly differentially expressed.
-dKKs <- dKK[dKK$padj <= 0.05,]
-dCAs <- dCA[dCA$padj <= 0.05,]
-
-# Keep only the ones with logFC more (or less) than 1.
-dKKsf1 <- dKKs[abs(dKKs$log2FoldChange) >= 1,]
-dCAsf1 <- dCAs[abs(dCAs$log2FoldChange) >= 1,]
-# Keep only the ones with logFC more (or less) than 0.5.
-dKKsf05 <- dKKs[abs(dKKs$log2FoldChange) >= 0.5,]
-dCAsf05 <- dCAs[abs(dCAs$log2FoldChange) >= 0.5,]
+# We have preselecteed for logFC1 and significant genes.
+dnls <- read.table("DESeq2_Genes_NLS_vs_WT.tab", header = TRUE)
 
 # Create name/logFC objects keep only the significant genes
-geneListCA <- dCAs[["log2FoldChange"]]
-geneListKK <- dKKs[["log2FoldChange"]]
-namesCA <- as.character(dCAs[["Gene_ID"]])
-namesKK <- as.character(dKKs[["Gene_ID"]])
-names(geneListCA) <- namesCA
-names(geneListKK) <- namesKK
-geneListCA1 <- dCAsf1[["log2FoldChange"]]
-geneListKK1 <- dKKsf1[["log2FoldChange"]]
-namesCA1 <- as.character(dCAsf1[["Gene_ID"]])
-namesKK1 <- as.character(dKKsf1[["Gene_ID"]])
-names(geneListCA1) <- namesCA1
-names(geneListKK1) <- namesKK1
-length(namesCA1)
-length(namesKK1)
-geneListCA05 <- dCAsf05[["log2FoldChange"]]
-geneListKK05 <- dKKsf05[["log2FoldChange"]]
-namesCA05 <- as.character(dCAsf05[["Gene_ID"]])
-namesKK05 <- as.character(dKKsf05[["Gene_ID"]])
-names(geneListCA05) <- namesCA05
-names(geneListKK05) <- namesKK05
-length(namesCA05)
-length(namesKK05)
+geneListNLS <- dnls[["log2FoldChange"]]
+namesNLS <- as.character(rownames(dnls))
+names(geneListNLS) <- namesNLS
+geneListNLS <- sort(geneListNLS, decreasing = TRUE)
 
-# Write files to the disk
-write(namesCA1, file = "deSeq2_DiffAnal_WT_CA_p05_FC1_geneNames.txt")
-write(namesKK1, file = "deSeq2_DiffAnal_WT_KK_p05_FC1_geneNames.txt")
-write(namesCA05, file = "deSeq2_DiffAnal_WT_CA_p05_FC05_geneNames.txt")
-write(namesKK05, file = "deSeq2_DiffAnal_WT_KK_p05_FC05_geneNames.txt")
-
+# Create also two separated lists one for UP one for DOWN regulated.
+geneListNLSUP <- geneListNLS[geneListNLS > 0]
+geneListNLSDOWN <- geneListNLS[geneListNLS < 0]
+namesNLSUP <- names(geneListNLSUP)
+namesNLSDOWN <- names(geneListNLSDOWN)
 
 
 ### Enrichments -------------------------------------------
@@ -80,7 +46,7 @@ length(namesCAwiki05)
 length(namesKKwiki05)
 
 # Prepare the reference pathways and the TERM2 objects.
-wp2genes <- read.gmt("../wikiPatways_Mm/wikipathways-20190110-gmt-Mus_musculus.gmt")
+wp2genes <- read.gmt("../../wikiPatways_Mm/wikipathways-20190110-gmt-Mus_musculus.gmt")
 wp2genes <- wp2genes %>% tidyr::separate("ont", c("name","version","wpid","org"), "%")
 wpid2gene <- wp2genes %>% dplyr::select("wpid", "gene") #TERM2GENE
 wpid2name <- wp2genes %>% dplyr::select("wpid", "name") #TERM2NAME
@@ -160,88 +126,71 @@ m_df$gs_id <- m_df$gene_symbol # BIG TRICK TO SWAP THE COLUMN NAMES!!!!!!
 
 
 ## Perform GSIGDB gene enrichment.
-esigCA1 <- enricher(namesCA1, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigCA1, showCategory = 50, title = "MsiGDB enrichment CA1")
-esigKK1 <- enricher(namesKK1, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigKK1, showCategory = 50, title = "MsiGDB enrichment KK1")
-esigCA05 <- enricher(namesCA05, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigCA05, showCategory = 50, title = "MsiGDB enrichment CA05")
-esigKK05 <- enricher(namesKK05, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigKK05, showCategory = 50, title = "MsiGDB enrichment KK05")
-
+esigALL <- enricher(namesNLS, minGSSize = 50, TERM2GENE = m_df)
+barplot(esigALL, showCategory = 50, title = "MsiGDB enrichment ALL")
+esigUP <- enricher(namesNLSUP, minGSSize = 50, TERM2GENE = m_df)
+barplot(esigUP, showCategory = 50, title = "MsiGDB enrichment UP")
+esigDOWN <- enricher(namesNLSDOWN, minGSSize = 50, TERM2GENE = m_df)
+barplot(esigDOWN, showCategory = 50, title = "MsiGDB enrichment DOWN")
 
 ## Perform GSIGDB Gene Set Enrichment.
-esigsCA1 <- GSEA(geneListCA1, minGSSize = 40, TERM2GENE = m_df)
-dotplot(esigsCA1, showCategory = 50, title = "MsiGDB GSEA CA1")
-esigsKK1 <- GSEA(geneListKK1, minGSSize = 20, TERM2GENE = m_df)
-dotplot(esigsKK1, showCategory = 50, title = "MsiGDB GSEA KK1")
-esigsCA05 <- GSEA(geneListCA05, minGSSize = 10, TERM2GENE = m_df)
-dotplot(esigsCA05, showCategory = 50, title = "MsiGDB GSEA CA05")
-esigsKK05 <- GSEA(geneListKK05, minGSSize = 20, TERM2GENE = m_df)
-dotplot(esigsKK05, showCategory = 50, title = "MsiGDB GSEA KK05")
+esigsALL <- GSEA(geneListNLS, minGSSize = 40, TERM2GENE = m_df)
+dotplot(esigsALL, showCategory = 50, title = "MsiGDB GSEA ALL")
+esigsUP <- GSEA(geneListNLSUP, minGSSize = 20, TERM2GENE = m_df)
+dotplot(esigsUP, showCategory = 50, title = "MsiGDB GSEA UP")
+esigsDOWN <- GSEA(geneListNLSDOWN, minGSSize = 10, TERM2GENE = m_df)
+dotplot(esigsDOWN, showCategory = 50, title = "MsiGDB GSEA DOWN")
 
 # Transform the common gene names to ENTREZIDs
-nidCA1 <- bitr(namesCA1, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
-nidKK1 <- bitr(namesKK1, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
-nidCA05 <- bitr(namesCA05, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
-nidKK05 <- bitr(namesKK05, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+nidALL <- bitr(namesNLS, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+nidUP <- bitr(namesNLSUP, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+nidDOWN <- bitr(namesNLSDOWN, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
 
 ## Perform GO group enrichment analysis.
-ggoCA1_MF2 <- groupGO(gene = nidCA1$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 2, readable = TRUE)
-barplot(ggoCA1_MF2, showCategory = 40,  title = "GroupGO CA1 MF2")
-ggoKK1_MF2 <- groupGO(gene = nidKK1$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 2, readable = TRUE)
-barplot(ggoKK1_MF2, showCategory = 40,  title = "GroupGO KK1 MF2")
-ggoCA05_MF2 <- groupGO(gene = nidCA05$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 2, readable = TRUE)
-barplot(ggoCA05_MF2, showCategory = 40, title = "GroupGO CA05 MF2")
-ggoKK05_MF2 <- groupGO(gene = nidKK05$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 2, readable = TRUE)
-barplot(ggoKK05_MF2, showCategory = 40, title = "GroupGO KK05 MF2")
+ggoALL_MF3 <- groupGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
+barplot(ggoALL_MF3, showCategory = 40,  title = "GroupGO CA1 MF3")
+ggoUP_MF3 <- groupGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
+barplot(ggoUP_MF3, showCategory = 40,  title = "GroupGO KK1 MF3")
+ggoDOWN_MF3 <- groupGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
+barplot(ggoDOWN_MF3, showCategory = 40, title = "GroupGO CA05 MF2")
 # Here one needs to play a lot with the level.
 
 
 ## Perform the enrichment in GO Molecular Functions analysis.
-egoCA1_MF <- enrichGO(gene = nidCA1$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoCA1_MF, title = "EnrichGO CA1 MF")
-egoKK1_MF <- enrichGO(gene = nidKK1$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 50, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoKK1_MF, title = "EnrichGO KK1 MF")
-egoCA05_MF <- enrichGO(gene = nidCA05$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 30, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoCA05_MF, title = "EnrichGO CA05 MF")
-egoKK05_MF <- enrichGO(gene = nidKK05$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoKK05_MF, title = "EnrichGO KK05 MF")
+egoALL_MF <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoALL_MF, title = "EnrichGO ALL MF")
+egoUP_MF <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 50, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoUP_MF, title = "EnrichGO UP MF")
+egoDOWN_MF <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 30, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoDOWN_MF, title = "EnrichGO DOWN MF")
+
 
 
 ## Perform enrichment in GO Biological Processes analysis.
-egoCA1_BP <- enrichGO(gene = nidCA1$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoCA1_BP, title = "EnrichGO CA1 BP")
-egoKK1_BP <- enrichGO(gene = nidKK1$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoKK1_BP, title = "EnrichGO KK1 BP")
-egoCA05_BP <- enrichGO(gene = nidCA05$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoCA05_BP, title =  "EnrichGO CA05 BP")
-egoKK05_BP <- enrichGO(gene = nidKK05$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoKK05_BP, title = "EnrichGO KK05 BP")  # Interesting enrichments for all.
+egoALL_BP <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoALL_BP, title = "EnrichGO ALL BP")
+egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 50, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoUP_BP, title = "EnrichGO UP BP")
+egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 30, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP")
 
 
 ## Perform gene set enrichment in GO Molecular Functions analysis.
-egogsCA1_MF <- gseGO(geneList = geneListCA1, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsCA1_MF, title = "GSEA GO MF CA1")
-egogsKK1_MF <- gseGO(geneList = geneListKK1, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsKK1_MF, title = "GSEA GO MF KK1")
-egogsCA05_MF <- gseGO(geneList = geneListCA05, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsKK1_MF, title = "GSEA GO MF CA05")
-egogsKK05_MF <- gseGO(geneList = geneListKK05, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsKK05_MF, title = "GSEA GO MF KK05")
-# NONE enriched
+egogsALL_MF <- gseGO(geneList = geneListNLS, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsALL_MF, title = "GSEA GO ALL MF")
+egogsUP_MF <- gseGO(geneList = geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsUP_MF, title = "GSEA GO UP MF")
+egogsDOWN_MF <- gseGO(geneList = geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsDOWN_MF, title = "GSEA GO DOWN MF")
 
 
 ## Perform the gene set enrichment in GO biological processes analysis.
-egogsCA1_BP <- gseGO(geneList = geneListCA1, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsCA1_BP, title = "GSEA GO BP CA1")
-egogsKK1_BP <- gseGO(geneList = geneListKK1, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsKK1_BP, title = "GSEA GO BP KK1")
-egogsCA05_BP <- gseGO(geneList = geneListCA05, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsCA05_BP, title = "GSEA GO BP CA05")
-egogsKK05_BP <- gseGO(geneList = geneListKK05, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsKK05_BP, title = "GSEA GO BP KK05")
-# No enrichment found.
+egogsALL_BP <- gseGO(geneList = geneListNLS, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsALL_BP, title = "GSEA GO ALL BP")
+egogsUP_BP <- gseGO(geneList = geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsUP_BP, title = "GSEA GO UP BP")
+egogsDOWN_BP <- gseGO(geneList = geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+dotplot(egogsDOWN_BP, title = "GSEA GO DOWN BP")
 
 
 ## Perform KEEG pathway enrichment.
@@ -304,14 +253,12 @@ emapplot(egoKK05_MF) + ggtitle("EMAplot MF KK05")
 
 
 ## Category Network (CNET) plots (perhaps the most usefull!)
-cnetplot(egoCA1_MF, foldChange = geneListCA1, colorEdge = TRUE) + ggtitle("CNETplot MF CA1")
-cnetplot(egoKK1_MF, foldChange = geneListKK1, colorEdge = TRUE) + ggtitle("CNETplot MF KK1")
-cnetplot(egoCA05_MF, foldChange = geneListCA05, colorEdge = TRUE) + ggtitle("CNETplot MF CA05")
-cnetplot(egoKK05_MF, foldChange = geneListKK05, colorEdge = TRUE) + ggtitle("CNETplot MF KK05")
-cnetplot(egoCA1_BP, foldChange = geneListCA1, colorEdge = TRUE) + ggtitle("CNETplot BP CA1")
-cnetplot(egoKK1_BP, foldChange = geneListKK1, colorEdge = TRUE) + ggtitle("CNETplot BP KK1")
-cnetplot(egoCA05_BP, foldChange = geneListCA05, colorEdge = TRUE) + ggtitle("CNETplot BP CA05")
-cnetplot(egoKK05_BP, foldChange = geneListKK05, colorEdge = TRUE) + ggtitle("CNETplot BP KK05")
+cnetplot(egoALL_MF, foldChange = geneListNLS, colorEdge = TRUE) + ggtitle("CNETplot MF ALL")
+cnetplot(egoUP_MF, foldChange = geneListNLSUP, colorEdge = TRUE) + ggtitle("CNETplot MF UP")
+cnetplot(egoDOWN_MF, foldChange = geneListNLSDOWN, colorEdge = TRUE) + ggtitle("CNETplot MF DOWN")
+cnetplot(egoALL_BP, foldChange = geneListNLS, colorEdge = TRUE) + ggtitle("CNETplot BP ALL")
+cnetplot(egoUP_BP, foldChange = geneListNLSUP, colorEdge = TRUE) + ggtitle("CNETplot BP UP")
+cnetplot(egoDOWN_BP, foldChange = geneListNLSDOWN, colorEdge = TRUE) + ggtitle("CNETplot BP DOWN")
 
 
 ## GOplots (extended EMA plots, perhaps confusing)
