@@ -194,62 +194,57 @@ dotplot(egogsDOWN_BP, title = "GSEA GO DOWN BP")
 
 
 ## Perform KEEG pathway enrichment.
-ekeCA1 <- enrichKEGG(gene = nidCA1$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
-barplot(ekeCA1, title = "KEGG enrichment CA1")
-ekeKK1 <- enrichKEGG(gene = nidKK1$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
-barplot(ekeKK1, title = "KEGG enrichment KK1")
-ekeCA05 <- enrichKEGG(gene = nidCA05$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
-barplot(ekeCA05, showCategory = 60, title = "KEGG enrichment CA05") ##
-ekeKK05 <- enrichKEGG(gene = nidKK05$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
-barplot(ekeKK05, title = "KEGG enrichment KK05")
+ekeALL <- enrichKEGG(gene = nidALL$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+barplot(ekeALL, title = "KEGG enrichment NLS_ALL")
+ekeUP <- enrichKEGG(gene = nidUP$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+barplot(ekeUP, title = "KEGG enrichment NLS_UP")
+ekeDOWN <- enrichKEGG(gene = nidDOWN$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+barplot(ekeDOWN, showCategory = 60, title = "KEGG enrichment NLS_DOWN")
 
-ekmCA1 <- enrichMKEGG(gene = nidCA1$ENTREZID, organism = "mmu")
-barplot(ekmCA1, title = "KEGG modules enrichment CA1")
-ekmKK1 <- enrichMKEGG(gene = nidKK1$ENTREZID, organism = "mmu")
-barplot(ekmKK1, showCategory = 30, title = "KEGG enrichment CA05")
-ekmCA05 <- enrichMKEGG(gene = nidCA05$ENTREZID, organism = "mmu")
-barplot(ekmCA05, title = "KEGG modules enrichment KK1")
-ekmKK05 <- enrichMKEGG(gene = nidKK05$ENTREZID, organism = "mmu")
-barplot(ekmKK05, title = "KEGG enrichment KK05")
+ekmALL <- enrichMKEGG(gene = nidALL$ENTREZID, organism = "mmu")
+barplot(ekmALL, title = "KEGG modules enrichment NLS_ALL")
+ekmUP <- enrichMKEGG(gene = nidUP$ENTREZID, organism = "mmu")
+barplot(ekmUP, showCategory = 30, title = "KEGG enrichment NLS_UP")
+ekmDOWN <- enrichMKEGG(gene = nidDOWN$ENTREZID, organism = "mmu")
+barplot(ekmDOWN, title = "KEGG modules enrichment NLS_DOWN")
 
-epaCA1 <- enrichPathway(gene = nidCA1$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
-barplot(epaCA1, showCategory = 30, title = "Pathways enrichment CA1")
-epaKK1 <- enrichPathway(gene = nidKK1$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
-barplot(epaKK1, title = "Pathways enrichment KK1")
-epaCA05 <- enrichPathway(gene = nidCA05$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
-barplot(epaCA05, title = "Pathways enrichment CA05")
-epaKK05 <- enrichPathway(gene = nidKK05$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
-barplot(epaKK05, showCategory = 20, title = "Pathways enrichment KK05")
+epaALL <- enrichPathway(gene = nidALL$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
+barplot(epaALL, showCategory = 30, title = "Pathways enrichment NLS_ALL")
+epaUP <- enrichPathway(gene = nidUP$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
+barplot(epaUP, title = "Pathways enrichment NLS_UP")
+epaDOWN <- enrichPathway(gene = nidDOWN$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
+barplot(epaDOWN, title = "Pathways enrichment CA05")
 
 
 
 ### Visualisations ----------------------------------------
-edoCA1 <- enrichDGN(nidCA1$ENTREZID)
-edoKK1 <- enrichDGN(nidKK1$ENTREZID)
+edoALL <- enrichDGN(nidALL$ENTREZID)
+edoUP <- enrichDGN(nidUP$ENTREZID)
+edoDOWN <- enrichDGN(nidDOWN$ENTREZID)
 # We can possibly do that if we transform to human orthologous genes.
 
 ## BArplots - Dotplots.
 # for Jupyter use the following to produce better figures
-#options(repr.plot.width=10,repr.plot.height=14) )
-barplot(ggoCA1_MF2, drop = TRUE, showCategory = 200, title = "")
-barplot(ggoKK1_MF2, drop = TRUE, showCategory = 200, title = "")
-dotplot(egoCA05_MF, showCategory = 30) + ggtitle("Dotplot for MF enrichment for CA")
-dotplot(egoCA1_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for CA")
-dotplot(egoKK05_MF, showCategory = 50) + ggtitle("Dotplot for MF enrichment for KK")
-dotplot(egoKK05_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for KK")
+#options(repr.plot.width=10,repr.plot.height=14))
+barplot(ggoALL_MF3, drop = TRUE, showCategory = 200, title = "Barplot GO-MF3 NLS_ALL")
+barplot(ggoUP_MF3, drop = TRUE, showCategory = 200, title = "Barplot GO-MF3 NLS_UP")
+barplot(ggoDOWN_MF3, drop = TRUE, showCategory = 200, title = "Barplot GO-MF3 NLS_DOWN")
+dotplot(egoALL_MF, showCategory = 30) + ggtitle("Dotplot for MF enrichment for NLS_ALL")
+dotplot(egoALL_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for NLS_ALL")
+dotplot(egoUP_MF, showCategory = 50) + ggtitle("Dotplot for MF enrichment for NLS_UP")
+dotplot(egoUP_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for NLS_UP")
+dotplot(egoDOWN_MF, showCategory = 50) + ggtitle("Dotplot for MF enrichment for NLS_DOWN")
+dotplot(egoDOWN_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for NLS_DOWN")
 
-
-## Enrichment Map GO plots
+## Enrichment Map GO plots, these plots help to understand the relationships BETWEEN GOs.
 # BF
-emapplot(egoCA1_BP) + ggtitle("EMAplot BP CA1")
-emapplot(egoKK1_BP) + ggtitle("EMAplot BP KK1")
-emapplot(egoCA05_BP) + ggtitle("EMAplot BP CA05")
-emapplot(egoKK05_BP) + ggtitle("EMAplot BP KK05")
+emapplot(egoALL_BP) + ggtitle("EMAplot BP NLS_ALL")
+emapplot(egoUP_BP) + ggtitle("EMAplot BP NLS_UP")
+emapplot(egoDOWN_BP) + ggtitle("EMAplot BP NLS_DOWN")
 # MF
-emapplot(egoCA1_MF) + ggtitle("EMAplot MF CA1")
-emapplot(egoKK1_MF) + ggtitle("EMAplot MF KK1")
-emapplot(egoCA05_MF) + ggtitle("EMAplot MF CA05")
-emapplot(egoKK05_MF) + ggtitle("EMAplot MF KK05")
+emapplot(egoALL_MF) + ggtitle("EMAplot MF NLS_ALL")
+emapplot(egoUP_MF) + ggtitle("EMAplot MF NLS_UP")
+emapplot(egoDOWN_MF) + ggtitle("EMAplot MF NLS_DOWN")
 
 
 ## Category Network (CNET) plots (perhaps the most usefull!)
@@ -262,238 +257,123 @@ cnetplot(egoDOWN_BP, foldChange = geneListNLSDOWN, colorEdge = TRUE) + ggtitle("
 
 
 ## GOplots (extended EMA plots, perhaps confusing)
-goplot(egoCA05_MF, showCategory = 30, geom = "text", alph = 0.50) + ggtitle("GOAplot MF CA05")
-goplot(egoKK05_MF, showCategory = 10, geom = "text", alph = 0.50) + ggtitle("EMAplot MF KK05")
-goplot(egoCA05_BP, showCategory = 10, geom = "text", alph = 0.50) + ggtitle("GOplot BP CA05")
-goplot(egoKK05_BP, showCategory = 10, geom = "text", alph = 0.50) + ggtitle("EMAplot BP KK05")
+goplot(egoALL_MF, showCategory = 30, geom = "text", alph = 0.50) + ggtitle("GOplot MF NLS_ALL")
+goplot(egoUP_MF, showCategory = 30, geom = "text", alph = 0.50) + ggtitle("GOplot MF NLS_UP")
+goplot(egoDOWN_MF, showCategory = 30, geom = "text", alph = 0.50) + ggtitle("GOplot MF NLS_DOWN")
+goplot(egoALL_BP, showCategory = 20, geom = "text", alph = 0.50) + ggtitle("GOplot BP NLS_ALL")
+
 
 
 ## Perform GO gene set enrichment analysis.
 # MF
-edoCA1_MF <- gseGO(geneListCA1, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
-dotplot(edoCA1_MF, title = "GSEA GO MF CA1") #
-edoKK1_MF <- gseGO(geneListKK1, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
-dotplot(edoKK1_MF, title = "GSEA GO MF KK1")
-edoCA05_MF <- gseGO(geneListCA05, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
-dotplot(edoCA05_MF,  title = "GSEA GO MF CA05")
-edoKK05_MF <- gseGO(geneListKK05, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
-dotplot(edoKK05_MF,  title = "GSEA GO MF KK05")
-# BP
-edoCA1_BP <- gseGO(geneListCA1, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
-dotplot(edoCA1_BP, title = "GSEA GO BP CA1") #
-edoKK1_BP <- gseGO(geneListKK1, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
-dotplot(edoKK1_BP, title = "GSEA GO BP KK1")
-edoCA05_BP <- gseGO(geneListCA05, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
-dotplot(edoCA05_BP, title = "GSEA GO BP CA05")
-edoKK05_BP <- gseGO(geneListKK05, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
-dotplot(edoKK05_BP, title = "GSEA GO BP KK05")
+edoALL_MF <- gseGO(geneListNLS, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+dotplot(edoALL_MF, title = "GSEA GO MF NLS_ALL")  #NO
+edoUP_MF <- gseGO(geneListNLSUP, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+dotplot(edoUP_MF, title = "GSEA GO MF NLS_UP")  #NO
+edoDOWN_MF <- gseGO(geneListNLSDOWN, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+dotplot(edoDOWN_MF, title = "GSEA GO MF NLS_DOWN")  #NO
+edoALL_BP <- gseGO(geneListNLS, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
+dotplot(edoALL_BP, title = "GSEA GO BP NLS_ALL")  #NO
+edoUP_BP <- gseGO(geneListNLSUP, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
+dotplot(edoUP_BP, title = "GSEA GO BP NLS_UP")  #NO
+edoDOWN_BP <- gseGO(geneListNLSDOWN, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
+dotplot(edoDOWN_BP, title = "GSEA GO BP NLS_DOWN")
 
 
 # Heat plots, grouping and gene expression!
-heatplot(edoCA1_BP, foldChange = geneListCA1)
-heatplot(edoKK05_BP, foldChange = geneListKK1)
+heatplot(edoDOWN_BP, foldChange = geneListNLSDOWN)
 
 # Ridge plot (funcy)
-ridgeplot(edoCA1_BP)
+ridgeplot(edoDOWN_BP)
 
 # GSEA plots, USEFULL more difficult to interpret.
-gseaplot2(edoCA1_BP, geneSetID = 1, title = edoCA1_BP$Description[1])
-gseaplot2(edoCA1_BP, geneSetID = 2, title = edoCA1_BP$Description[2])
-gseaplot2(edoCA1_BP, geneSetID = 1:5, title = "GSES of the top 5")  # This is usefull as we can superimpose many different enrichments!
+gseaplot2(edoDOWN_BP, geneSetID = 1, title = edoDOWN_BP$Description[1])
+gseaplot2(edoDOWN_BP, geneSetID = 2, title = edoDOWN_BP$Description[2])
+gseaplot2(edoDOWN_BP, geneSetID = 1:5, title = "GSEAs of the top 5 NLS_DOWN")  # This is usefull as we can superimpose many different enrichments!
 
 
 
 ### Clustering --------------------------------------------
 # Collect data.
-ddCA1 <- read.table("tpm_WT_CA_KK_NLSB_degsCA_p05_fc1.tab", header = TRUE)
-ddKK1 <- read.table("tpm_WT_CA_KK_NLSB_degsKK_p05_fc1.tab", header = TRUE)
-ddCA05 <- read.table("tpm_WT_CA_KK_NLSB_degsCA_p05_fc05.tab", header = TRUE)
-ddKK05 <- read.table("tpm_WT_CA_KK_NLSB_degsKK_p05_fc05.tab", header = TRUE)
+dd <- read.table("tpm_WT_NLSB.tab", header = TRUE)
+ddNLS <- dd[namesNLS, ]
+ddNLSUP <- dd[namesNLSUP, ]
+ddNLSDOWN <- dd[namesNLSDOWN, ]
+
+
 #Clean the zeros
-ddCA1 <- ddCA1[apply(ddCA1, 1, function(row) all(row != 0 )),]
-ddKK1 <- ddKK1[apply(ddKK1, 1, function(row) all(row != 0 )),]
-ddCA05 <- ddCA05[apply(ddCA05, 1, function(row) all(row != 0 )),]
-ddKK05 <- ddKK05[apply(ddKK05, 1, function(row) all(row != 0 )),]
-summary(ddCA05)
+dNLS <- ddNLS[apply(ddNLS, 1, function(row) any(row != 0 )),]
+dNLSUP <- ddNLSUP[apply(ddNLSUP, 1, function(row) any(row != 0 )),]
+dNLSDOWN <- ddNLSDOWN[apply(ddNLSDOWN, 1, function(row) any(row != 0 )),]
+summary(dNLSUP)
 
-# Get the logs. (natural)
-dCA1 <- log(ddCA1[,c(1,2,3,4,5,6)])
-dKK1 <- log(ddKK1[,c(1,2,3,7,8,9)])
-dCA05 <- log(ddCA05[,c(1,2,3,4,5,6)])
-dKK05 <- log(ddKK05[,c(1,2,3,7,8,9)])
-colnames(dCA1) <- c("WT1", "WT2", "WT3", "CA1", "CA2", "CA3")
-colnames(dCA05) <- c("WT1", "WT2", "WT3", "CA1", "CA2", "CA3")
-colnames(dKK1) <- c("WT1", "WT2", "WT3", "KK1", "KK2", "KK3")
-colnames(dKK05) <- c("WT1", "WT2", "WT3", "KK1", "KK2", "KK3")
+# Get the logs. (natural) Perhaps we do not need that.
+#dCA1 <- log(ddCA1[,c(1,2,3,4,5,6)])
+#dKK1 <- log(ddKK1[,c(1,2,3,7,8,9)])
+#dCA05 <- log(ddCA05[,c(1,2,3,4,5,6)])
 
-### For the CA DEGs
-## Hierarhical clustering of CA1
+colnames(dNLS) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
+colnames(dNLSUP) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
+colnames(dNLSDOWN) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
+
+
 my_palette <- brewer.pal(n = 11, name = "RdYlGn")
+### For ALL the NLS DEGs
+## Hierarhical clustering of NLS DEGs
 # Do the clustering.
-clust_CA1 <- hclust(dist(dCA1), method = "single")
+clust_NLS <- hclust(dist(dNLS), method = "centroid")
 # define clusters (hard thresold)
-CA1_Clusts <- cutree(clust_CA1, h = max(clust_CA1$height/1.5))
+NLS_Clusts <- cutree(clust_NLS, k = 4)
 # Colour vector for clusters side bar.
-myClustCols <- rainbow(length(unique(CA1_Clusts)))
-myClusters_CA1 <- myClustCols[CA1_Clusts]
-heatmap.2(as.matrix(dCA1), main = "DEGs CA_1 hierarchical clustering", Rowv = as.dendrogram(clust_CA1), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 2, cexRow = 0.4, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_CA1)
-
-m## Hierarhical clustering of CA05
-clust_CA05 <- hclust(dist(dCA05), method = "single")
-# define clusters (hard thresold)
-CA05_Clusts <- cutree(clust_CA05, h = max(clust_CA05$height/2))
-#CA05_Clusts <- cutree(clust_CA05, k = 3)
-# Colour vector for clusters side bar.
-myClustCols <- rainbow(length(unique(CA05_Clusts)))
-myClusters_CA05 <- myClustCols[CA05_Clusts]
-heatmap.2(as.matrix(dCA05), main = "DEGs CA_05 hierarchical clustering", Rowv = as.dendrogram(clust_CA05), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 2, cexRow = 0.4, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_CA05)
+myClustCols <- rainbow(length(unique(NLS_Clusts)))
+myClusters_NLS <- myClustCols[NLS_Clusts]
+heatmap.2(as.matrix(dNLS), main = "Hierarchical clustering of NLS DEGs.", Rowv = as.dendrogram(clust_NLS), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 1.5, cexRow = 0.4, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_NLS)
 
 
 ## Determine number of clusters by plotting sum of squares whitnin groups
-wssCA <- (nrow(dCA1))*sum(apply(dCA1,2,var))
-for (i in 2:15) wssCA[i] <- sum(kmeans(dCA1, centers = i, iter.max = 100, nstart = 250)$withinss)
+wssNLS <- (nrow(dNLS))*sum(apply(dNLS,2,var))
+for (i in 2:15) wssNLS[i] <- sum(kmeans(dNLS, centers = i, iter.max = 100, nstart = 250)$withinss)
 my_palette <- brewer.pal(n = 11, name = "RdYlGn")
-plot(1:15, wssCA, type = "b", xlab = "Number of Clusters", ylab = "Within groups sum of squares CA")
+plot(1:15, wssNLS, type = "b", xlab = "Number of Clusters", ylab = "Within groups sum of squares CA")
 
 ## Perform k-means clustering
-#set.seed(1)  # Always set the same random seed.
-kmCA1 <- kmeans(as.matrix(dCA1), 6)
-kmCA05 <- kmeans(as.matrix(dCA05), 6)
-
+# Kmeans NLS ALL.
+set.seed(1)  # Always set the same random seed.
+kmNLS <- kmeans(as.matrix(dNLS), 2, iter.max = 200, nstart = 20)
 # Append id and cluster
-dfcallCA1 <- cbind(dCA1, id = seq(nrow(dCA1)), cluster = kmCA1$cluster)
+dfclNLS <- cbind(dNLS, id = seq(nrow(dNLS)), cluster = kmNLS$cluster)
 # Add idsort, the id number ordered by cluster
-dfcallCA1$idsort <- dfcallCA1$id[order(dfcallCA1$cluster)]
-dfcallCA1$idsort <- order(dfcallCA1$idsort)
-clusterColsCA1 <- as.character(sort(kmCA1$cluster))
-
+dfclNLS$idsort <- dfclNLS$id[order(dfclNLS$cluster)]
+dfclNLS$idsort <- order(dfclNLS$idsort)
+clusterColsNLS <- as.character(sort(kmNLS$cluster))
 ## Plot k-means clustering.
-heatmap(as.matrix(dCA1)[order(kmCA1$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsCA1, ylab = "Genes", main = "k-means clustering of CA_1 TPMs")
+heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLS, ylab = "Genes", main = "k-means clustering of NLS tmp.")
 
-
-## For the KK DEGs.
-## Hierarchical clustering of KK1
-clust_KK1 <- hclust(dist(dKK1), method = "single")
-# define clusters (hard thresold)
-KK1_Clusts <- cutree(clust_KK1, h = max(clust_KK1$height/1.3))
-#kk1_Clusts <- cutree(clust_KK1, k = 3)
-# Colour vector for clusters side bar.
-myClustCols <- rainbow(length(unique(KK1_Clusts)))
-myClusters_KK1 <- myClustCols[KK1_Clusts]
-heatmap.2(as.matrix(dKK1), main = "DEGs KK_1 hierarchical clustering", Rowv = as.dendrogram(clust_KK1), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 2, cexRow = 0.6, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_KK1)
-
-## Hierarchical clustering of KK05
-clust_KK05 <- hclust(dist(dKK05), method = "single")
-# define clusters (hard thresold)
-KK05_Clusts <- cutree(clust_KK05, h = max(clust_KK05$height/3))
-#KK05_Clusts <- cutree(clust_KK05, k = 20)
-# Colour vector for clusters side bar.
-myClustCols <- rainbow(length(unique(KK05_Clusts)))
-myClusters_KK05 <- myClustCols[KK05_Clusts]
-heatmap.2(as.matrix(dKK05), main = "DEGs KK_05 hierarchical clustering", Rowv = as.dendrogram(clust_KK05), dendrogram = "row", Colv = FALSE, scale = "row", col = my_palette, cexCol = 2, cexRow = 0.6, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_KK05)
-
-# determine number of cluster by plotting sum of squares whitnin groups
-wssKK <- (nrow(dKK05))*sum(apply(dKK05,2,var))
-for (i in 2:15) wssKK[i] <- sum(kmeans(dKK05, centers = i, iter.max = 100, nstart = 250)$withinss)
-plot(1:15, wssKK, type = "b", xlab = "Number of Clusters", ylab = "Within groups sum of squares KK")
-
-## Perform k-means clustering
-#set.seed(1)  # Always set the same random seed.
-kmKK1 <- kmeans(dKK1, 4, iter.max = 500, nstart = 200)
-kmKK05 <- kmeans(dKK05, 4, iter.max = 500, nstart = 200)
-
+# Kmeans NLS-UP.
+kmNLSUP <- kmeans(as.matrix(dNLSUP), 4, iter.max = 200, nstart = 20)
 # Append id and cluster
-dfcallKK05 <- cbind(dKK05, id = seq(nrow(dKK05)), cluster = kmKK05$cluster)
+dfclNLSUP <- cbind(dNLSUP, id = seq(nrow(dNLSUP)), cluster = kmNLSUP$cluster)
 # Add idsort, the id number ordered by cluster
-dfcallKK05$idsort <- dfcallKK05$id[order(dfcallKK05$cluster)]
-dfcallKK05$idsort <- order(dfcallKK05$idsort)
-clusterColsKK05 <- as.character(sort(kmKK05$cluster))
-
-# Plot k-means clustering.
-heatmap(as.matrix(dKK05)[order(kmKK05$cluster),], Rowv = NA, Colv = NA, col = my_palette, cexCol = 1.5, cexRow = 0.7, RowSideColors = clusterColsKK05, ylab = "Genes", main = "k-means clustering of KK_05 TPMs")
+dfclNLSUP$idsort <- dfclNLSUP$id[order(dfclNLSUP$cluster)]
+dfclNLSUP$idsort <- order(dfclNLSUP$idsort)
+clusterColsNLSUP <- as.character(sort(kmNLSUP$cluster))
+## Plot k-means clustering.
+heatmap(as.matrix(dNLSUP)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
 
 
 # The PAM method.
-pam_dKK05 <- pam(dKK05, 4)
+pam_NLS <- pam(dNLS, 4)
+## Plot PAM clustering.
+heatmap(as.matrix(dNLS)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
 
 ## Perform some clustering tests and visulaisations.
-km4_KK05.res <- kmeans(dKK05, 4, nstart = 1000)
-km2_KK05.res <- kmeans(dKK05, 4, nstart = 1000)
-kmCorr_KK05.res <- kmeans(cor(t(dKK05)), 2, nstart = 250)
-clust_KK05 <- hclust(dist(dKK05), method = "single")
-
-fviz_cluster(kmCorr_KK05.res, data = dKK05, ellipse.type = "convex") + theme_minimal()
+fviz_cluster(pam_NLS, data = dNLS, ellipse.type = "convex") + theme_minimal()
 
 
 # Lastly try also the MClust package.
-mclust_KK05 <- Mclust(dKK05)
-summary(mclust_KK05)
+mclust_NLS <- Mclust(dNLS)
+summary(mclust_NLS)
 
-fviz_cluster(mclust_KK05, data = dKK05, ellipse.type = "convex") + theme_minimal()
-
-
+fviz_cluster(mclust_NLS, data = dNLS, ellipse.type = "convex") + theme_minimal()
 
 ## Clustering raw data of DEGs is not so informative.
-
-## We proceed by clustering the up and dow regulated genes independently.
-
-### CLUSTERING OF UP AND DOW REGULATED GENES IN CA1 and KK05.
-
-# Prepare the data frames.
-# Keep only the ones with logFC more (or less) than 1.
-dCAsf1u <- dCAs[dCAs$log2FoldChange >= 1,]
-dCAsf1d <- dCAs[dCAs$log2FoldChange <= -1,]
-# Keep only the ones with logFC more (or less) than 0.5.
-dKKsf05u <- dKKs[dKKs$log2FoldChange >= 0.5,]
-dKKsf05d <- dKKs[dKKs$log2FoldChange <= -0.5,]
-
-# Create name/logFC objects keep only the significant genes
-geneListCA1u <- dCAsf1u[["log2FoldChange"]]
-geneListCA1d <- dCAsf1d[["log2FoldChange"]]
-namesCA1u <- as.character(dCAsf1u[["Gene_ID"]])
-namesCA1d <- as.character(dCAsf1d[["Gene_ID"]])
-names(geneListCA1u) <- namesCA1u
-names(geneListCA1d) <- namesCA1d
-length(namesCA1u)
-length(namesCA1d)
-geneListKK05u <- dKKsf05u[["log2FoldChange"]]
-geneListKK05d <- dKKsf05d[["log2FoldChange"]]
-namesKK05u <- as.character(dKKsf05u[["Gene_ID"]])
-namesKK05d <- as.character(dKKsf05d[["Gene_ID"]])
-names(geneListKK05u) <- namesKK05u
-names(geneListKK05d) <- namesKK05d
-length(namesKK05u)
-length(namesKK05d)
-
-## Select the data
-ddCA1u <- ddCA05[namesCA1u,]
-ddCA1d <- ddCA05[namesCA1d,]
-ddKK05u <- ddKK05[namesKK05u,]
-ddKK05d <- ddKK05[namesKK05d,]
-
-#Clean zeros and NAs.
-ddCA1u <- ddCA1u[apply(ddCA1u, 1, function(row) all(row != 0 )),]
-ddCA1d <- ddCA1d[apply(ddCA1d, 1, function(row) all(row != 0 )),]
-ddKK05u <- ddKK05u[apply(ddKK05u, 1, function(row) all(row != 0 )),]
-ddKK05d <- ddKK05u[apply(ddKK05d, 1, function(row) all(row != 0 )),]
-
-# Get the logs. (natural)
-dCA1u <- log(ddCA1u[,c(1,2,3,4,5,6)])
-dCA1d <- log(ddCA1d[,c(1,2,3,4,5,6)])
-dKK05u <- log(ddKK05[,c(1,2,3,7,8,9)])
-dKK05d <- log(ddKK05[,c(1,2,3,7,8,9)])
-colnames(dCA1u) <- c("WT1", "WT2", "WT3", "CA1", "CA2", "CA3")
-colnames(dCA1d) <- c("WT1", "WT2", "WT3", "CA1", "CA2", "CA3")
-colnames(dKK05u) <- c("WT1", "WT2", "WT3", "KK1", "KK2", "KK3")
-colnames(dKK05d) <- c("WT1", "WT2", "WT3", "KK1", "KK2", "KK3")
-
-## Hierarhical clustering of CA1-up
-my_palette <- brewer.pal(n = 11, name = "RdYlGn")
-# Do the clustering.
-clust_CA1u <- hclust(dist(dCA1u), method = "single")
-# define clusters (hard thresold)
-CA1_Clusts <- cutree(clust_CA1, h = max(clust_CA1$height/1.5))
-# Colour vector for clusters side bar.
-myClustCols <- rainbow(length(unique(CA1_Clusts)))
-myClusters_CA1 <- myClustCols[CA1_Clusts]
-heatmap.2(as.matrix(dCA1u), main = "DEGs CA_1 hierarchical clustering", Rowv = as.dendrogram(clust_CA1u), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 2, cexRow = 0.4, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_CA1)
