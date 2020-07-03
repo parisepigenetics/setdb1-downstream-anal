@@ -11,10 +11,23 @@ library(gplots)
 library(factoextra)
 library(cluster)
 library(mclust)
+library(RDAVIDWebService)
+library(Factoshiny)
+library(FactoMineR)
+library(corrplot)
+library(NetCluster)
+library(eulerr)
+library(ggcorrplot)
 
 ### Load/preprocess data ----------------------------------
-# We have preselecteed for logFC1 and significant genes.
-dnls <- read.table("DESeq2_Genes_NLS_vs_WT.tab", header = TRUE)
+# We have preselected for logFC1 and significant genes.
+d <- read.table("DESeq2_Genes_NLS_vs_WT.tab", header = TRUE)
+
+# Here are the TPMs of all genes.
+dd <- read.table("tpm_WT_NLSB.tab", header = TRUE)
+
+dnls <- d # For LogFC 1
+dnls <- subset(d, (d$log2FoldChange >= 1.5 | d$log2FoldChange <= -1.5)) # For LogFC 1.5
 
 # Create name/logFC objects keep only the significant genes
 geneListNLS <- dnls[["log2FoldChange"]]
@@ -28,66 +41,52 @@ geneListNLSDOWN <- geneListNLS[geneListNLS < 0]
 namesNLSUP <- names(geneListNLSUP)
 namesNLSDOWN <- names(geneListNLSDOWN)
 
+# Get the universe. (i.e. all the genes that we have identify in our experiment.)
+allMm_ProteinCoding <- scan("ensembl_Mouse_ProteinCoding_NAMES.txt", what = "character")
+dU <- dd[allMm_ProteinCoding,, ]
+# Remove zeros and NAs.
+dU <- dU[apply(dU, 1, function(row) all(row !=0 )), ]
+dU <- dU[complete.cases(dU),]
+universeSYMBOLS <- rownames(dU)
+universeENTREZ <- bitr(universeSYMBOLS, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)$ENTREZID
+
+
 
 ### Enrichments -------------------------------------------
-# Get wikipathID names.
+
+# WikiPaths enrichment.
 # Add column with the WikiGene ID.
-convt <- read.table("wikiID_geneID.txt", sep = "\t")  # tabledownloaded from ENSEMBL BioMart
+convt <- read.table("wikiID_geneID.txt", sep = "\t")  # table downloaded from ENSEMBL BioMart
 colnames(convt) <- c("WikiGeneID", "GeneID")
-namesCAwiki1 <- convt[convt$GeneID %in% namesCA1,]$WikiGeneID
-namesKKwiki1 <- convt[convt$GeneID %in% namesKK1,]$WikiGeneID
-namesCAwiki05 <- convt[convt$GeneID %in% namesCA05,]$WikiGeneID
-namesKKwiki05 <- convt[convt$GeneID %in% namesKK05,]$WikiGeneID
-#namesCAwiki <- as.character(namesCAwiki[complete.cases(namesCAwiki)])
-#namesKKwiki <- as.character(namesKKwiki[complete.cases(namesKKwiki)])
-length(namesCAwiki1)
-length(namesKKwiki1)
-length(namesCAwiki05)
-length(namesKKwiki05)
+namesNLSwiki <- convt[convt$GeneID %in% namesNLS,]$WikiGeneID
+namesNLSUPwiki <- convt[convt$GeneID %in% namesNLSUP,]$WikiGeneID
+namesNLSDOWNwiki <- convt[convt$GeneID %in% namesNLSDOWN,]$WikiGeneID
+
 
 # Prepare the reference pathways and the TERM2 objects.
-wp2genes <- read.gmt("../../wikiPatways_Mm/wikipathways-20190110-gmt-Mus_musculus.gmt")
-wp2genes <- wp2genes %>% tidyr::separate("ont", c("name","version","wpid","org"), "%")
+wp2genes <- read.gmt("/home/costas/sysBiol_Diderot/common_data/wikiPatways_Mm/wikipathways-20200610-gmt-Mus_musculus.gmt")
+wp2genes <- wp2genes %>% tidyr::separate(term, c("name", "version", "wpid", "org"), "%")
 wpid2gene <- wp2genes %>% dplyr::select("wpid", "gene") #TERM2GENE
 wpid2name <- wp2genes %>% dplyr::select("wpid", "name") #TERM2NAME
 
 
 ## Perform WikiPaths enrichment analysis.
-ewpCA1 <- enricher(namesCAwiki1, minGSSize = 40, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpCA1, showCategory = 30, title = "WikiPaths enrichment CA1")
-ewpKK1 <- enricher(namesKKwiki1, minGSSize = 20, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpKK1, showCategory = 30,  title = "WikiPaths enrichment KK1")
-ewpCA05 <- enricher(namesCAwiki05, minGSSize = 50, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpCA05, showCategory = 30,  title = "WikiPaths enrichment CA05")
-ewpKK05 <- enricher(namesKKwiki05, minGSSize = 10, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpKK05, showCategory = 30,  title = "WikiPaths enrichment KK05")
-
-# Prepare two new gene lists without filtering for logFC.
-namesCAs <- as.character(dCAs[["Gene_ID"]])
-namesCAwikiS <- convt[convt$GeneID %in% namesCAs,]$WikiGeneID
-namesKKs <- as.character(dKKs[["Gene_ID"]])
-namesKKwikiS <- convt[convt$GeneID %in% namesKKs,]$WikiGeneID
-length(namesCAwikiS)
-length(namesKKwikiS)
-
-
-## Perform WikiPaths enrichment experiment WITHOUT logFC.
-ewpCA0 <- enricher(namesCAwikiS, minGSSize = 50, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpCA0, showCategory = 30,  title = "WikiPaths enrichment ALL DEGs")
-ewpKK0 <- enricher(namesKKwikiS, minGSSize = 50, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
-barplot(ewpKK0, showCategory = 30,  title = "WikiPaths enrichment ALL KK DEGs")
+ewpNLS <- enricher(namesNLSwiki, minGSSize = 10, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
+barplot(ewpNLS, showCategory = 30, title = "WikiPaths enrichment NLS")
+ewpNLSUP <- enricher(namesNLSUPwiki, minGSSize = 10, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
+barplot(ewpNLSUP, showCategory = 30, title = "WikiPaths enrichment NLS-UP")
+ewpNLSDOWN <- enricher(namesNLSDOWNwiki, minGSSize = 10, TERM2GENE = wpid2gene, TERM2NAME = wpid2name)
+barplot(ewpNLS, showCategory = 30, title = "WikiPaths enrichment NLS-DOWN")
 
 
 # Prepare the geneLists (ordered gene list)
 # These are the gene names that we have Wiki IDs.
-nn <- unique(convt[convt$WikiGene.ID %in% namesCAwikiS,]$GeneID)
-mm <- unique(convt[convt$WikiGene.ID %in% namesKKwikiS,]$GeneID)
+nn <- unique(convt[convt$WikiGene.ID %in% namesNLSwiki,]$GeneID)
 
-glCA <- geneListCA[names(geneListCA) %in% levels(nn)]
-glKK <- geneListKK[names(geneListKK) %in% levels(mm)]
+glNLS <- geneListNLS[names(geneListNLS) %in% levels(nn)]
 
-length(unique(convt[convt$GeneID %in% names(glCA),]$WikiGeneID))
-length(names(glCA))
+length(unique(convt[convt$GeneID %in% names(glNLS),]$WikiGeneID))
+length(names(glNLS))
 length(convt[convt$WikiGeneID %in% wpid2gene$gene,]$GeneID)
 subset(convt, convt$WikiGeneID == wpid2gene[1,]$gene)[1,]$GeneID  # Just to check
 
@@ -103,42 +102,31 @@ wpid2geneID <- wpid2geneID[complete.cases(wpid2geneID),]
 dim(wpid2geneID)
 head(wpid2geneID)
 
-# Sort the gene lists.
-geneListCA1 <- sort(geneListCA1, decreasing = TRUE)
-geneListKK1 <- sort(geneListKK1, decreasing = TRUE)
-geneListCA05 <- sort(geneListCA05, decreasing = TRUE)
-geneListKK05 <- sort(geneListKK05, decreasing = TRUE)
 
 ## Perform Gene Set Enrichment of WikiPaths.
-ewpgsCA1 <- GSEA(geneListCA1, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpCA1, title = "WikiPaths GSEA CA1")
-ewpgsKK1 <- GSEA(geneListKK1, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpKK1, title = "WikiPaths GSEA KK1")
-ewpgsCA05 <- GSEA(geneListCA05, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpCA05, showCategory = 30, title = "WikiPaths GSEA CA05")
-ewpgsKK05 <- GSEA(geneListKK05, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
-barplot(ewpKK05, showCategory = 30, title = "WikiPaths GSEA KK05")
+ewpgsNLS <- GSEA(geneListNLS, TERM2GENE = wpid2geneID, TERM2NAME = wpid2name, verbose = FALSE)
+barplot(ewpgsNLS, title = "WikiPaths GSEA NLS")  # No enrichment.
 
 
 # MSIGDB enrichment
 m_df <- msigdbr(species = "Mus musculus")
-m_df$gs_id <- m_df$gene_symbol # BIG TRICK TO SWAP THE COLUMN NAMES!!!!!!
-
+#m_df$gs_id <- m_df$gene_symbol # BIG TRICK TO SWAP THE COLUMN NAMES!!!!!!
+m_t2g <- m_df %>% dplyr::select(gs_name, gene_symbol)
 
 ## Perform GSIGDB gene enrichment.
-esigALL <- enricher(namesNLS, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigALL, showCategory = 50, title = "MsiGDB enrichment ALL")
-esigUP <- enricher(namesNLSUP, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigUP, showCategory = 50, title = "MsiGDB enrichment UP")
-esigDOWN <- enricher(namesNLSDOWN, minGSSize = 50, TERM2GENE = m_df)
-barplot(esigDOWN, showCategory = 50, title = "MsiGDB enrichment DOWN")
+esigALL <- enricher(namesNLS, minGSSize = 20, TERM2GENE = m_t2g)
+dotplot(esigALL, showCategory = 50, title = "MsiGDB enrichment ALL")
+esigUP <- enricher(namesNLSUP, minGSSize = 20, TERM2GENE = m_t2g)
+dotplot(esigUP, showCategory = 50, title = "MsiGDB enrichment UP")
+esigDOWN <- enricher(namesNLSDOWN, minGSSize = 20, TERM2GENE = m_t2g)
+dotplot(esigDOWN, showCategory = 50, title = "MsiGDB enrichment DOWN")
 
 ## Perform GSIGDB Gene Set Enrichment.
-esigsALL <- GSEA(geneListNLS, minGSSize = 40, TERM2GENE = m_df)
+esigsALL <- GSEA(geneListNLS, minGSSize = 20, TERM2GENE = m_t2g)
 dotplot(esigsALL, showCategory = 50, title = "MsiGDB GSEA ALL")
-esigsUP <- GSEA(geneListNLSUP, minGSSize = 20, TERM2GENE = m_df)
+esigsUP <- GSEA(geneListNLSUP, minGSSize = 20, TERM2GENE = m_t2g)
 dotplot(esigsUP, showCategory = 50, title = "MsiGDB GSEA UP")
-esigsDOWN <- GSEA(geneListNLSDOWN, minGSSize = 10, TERM2GENE = m_df)
+esigsDOWN <- GSEA(geneListNLSDOWN, minGSSize = 20, TERM2GENE = m_t2g)
 dotplot(esigsDOWN, showCategory = 50, title = "MsiGDB GSEA DOWN")
 
 # Transform the common gene names to ENTREZIDs
@@ -148,57 +136,70 @@ nidDOWN <- bitr(namesNLSDOWN, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = 
 
 ## Perform GO group enrichment analysis.
 ggoALL_MF3 <- groupGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
-barplot(ggoALL_MF3, showCategory = 40,  title = "GroupGO CA1 MF3")
+barplot(ggoALL_MF3, showCategory = 40,  title = "GroupGO NLS-ALL MF3")
 ggoUP_MF3 <- groupGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
-barplot(ggoUP_MF3, showCategory = 40,  title = "GroupGO KK1 MF3")
+barplot(ggoUP_MF3, showCategory = 40,  title = "GroupGO NLS-UP MF3")
 ggoDOWN_MF3 <- groupGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, ont = "MF", level = 3, readable = TRUE)
-barplot(ggoDOWN_MF3, showCategory = 40, title = "GroupGO CA05 MF2")
+barplot(ggoDOWN_MF3, showCategory = 40, title = "GroupGO NLS-DOWN MF3")
 # Here one needs to play a lot with the level.
 
 
 ## Perform the enrichment in GO Molecular Functions analysis.
-egoALL_MF <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoALL_MF, title = "EnrichGO ALL MF")
-egoUP_MF <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 50, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoUP_MF, title = "EnrichGO UP MF")
-egoDOWN_MF <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 30, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoDOWN_MF, title = "EnrichGO DOWN MF")
-
+egoALL_MF <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoALL_MF, title = "EnrichGO ALL MF", showCategory = 30)
+egoUP_MF <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoUP_MF, title = "EnrichGO UP MF", showCategory = 30)
+egoDOWN_MF <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoDOWN_MF, title = "EnrichGO DOWN MF", showCategory = 30)  # Only this one yiled results
 
 
 ## Perform enrichment in GO Biological Processes analysis.
-egoALL_BP <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoALL_BP, title = "EnrichGO ALL BP")
-egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 50, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoUP_BP, title = "EnrichGO UP BP")
-egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 30, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
-dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP")
+egoALL_BP <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoALL_BP, showCategory = 30, title = "EnrichGO ALL BP")
+cnetplot(egoALL_BP)
+egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoUP_BP, title = "EnrichGO UP BP", showCategory = 30)
+egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP", showCategory = 30)
 
 
-## Perform gene set enrichment in GO Molecular Functions analysis.
-egogsALL_MF <- gseGO(geneList = geneListNLS, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsALL_MF, title = "GSEA GO ALL MF")
-egogsUP_MF <- gseGO(geneList = geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsUP_MF, title = "GSEA GO UP MF")
-egogsDOWN_MF <- gseGO(geneList = geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "MF", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
-dotplot(egogsDOWN_MF, title = "GSEA GO DOWN MF")
+
+## Perform enrichment in GO ALL categories.
+egoALL <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.01, readable = TRUE)
+dotplot(egoALL, showCategory = 30, title = "EnrichGO ALL ALL")
+cnetplot(egoALL, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 20) #+ ggtitle("Gene-concept network plot NLS ALL")
+
+egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoUP_BP, title = "EnrichGO UP BP", showCategory = 30)
+egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 800, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP", showCategory = 30)
+
+
+
+## Perform gene set enrichment analysis in GO ALL.
+egogsALL_ALL <- gseGO(geneList = geneListNLS, ont = "ALL", OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 1000, pvalueCutoff = 0.1, keyType = "SYMBOL", by = "DOSE", nPerm = 1000)
+dotplot(egogsALL_ALL, title = "GSEA GO ALL DEGs all")
+egogsUP_ALL <- gseGO(geneList = geneListNLSUP, ont = "ALL", OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 1000, pvalueCutoff = 0.1, keyType = "SYMBOL", by = "DOSE", nPerm = 1000)
+dotplot(egogsUP_ALL, title = "GSEA GO ALL DEGs UP")
+egogsDOWN_ALL <- gseGO(geneList = geneListNLSDOWN, ont = "ALL", OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 1000, pvalueCutoff = 0.1, keyType = "SYMBOL", by = "DOSE", nPerm = 1000)
+dotplot(egogsUP_ALL, title = "GSEA GO ALL DEGs DOWN")
 
 
 ## Perform the gene set enrichment in GO biological processes analysis.
-egogsALL_BP <- gseGO(geneList = geneListNLS, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+egogsALL_BP <- gseGO(geneList = geneListNLS, OrgDb = org.Mm.eg.db, ont = "BP", minGSSize = 20, maxGSSize = 800, pvalueCutoff = 0.1, verbose = FALSE, keyType = "SYMBOL")
 dotplot(egogsALL_BP, title = "GSEA GO ALL BP")
-egogsUP_BP <- gseGO(geneList = geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+egogsUP_BP <- gseGO(geneList = geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "BP", minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
 dotplot(egogsUP_BP, title = "GSEA GO UP BP")
-egogsDOWN_BP <- gseGO(geneList = geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "BP", nPerm = 1000, minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
+egogsDOWN_BP <- gseGO(geneList = geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "BP", minGSSize = 50, maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE, keyType = "SYMBOL")
 dotplot(egogsDOWN_BP, title = "GSEA GO DOWN BP")
 
 
 ## Perform KEEG pathway enrichment.
-ekeALL <- enrichKEGG(gene = nidALL$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+ekeALL <- enrichKEGG(gene = nidALL$ENTREZID, organism = "mmu", pvalueCutoff = 0.1, minGSSize = 20, maxGSSize = 1000)
 barplot(ekeALL, title = "KEGG enrichment NLS_ALL")
-ekeUP <- enrichKEGG(gene = nidUP$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+ekeUP <- enrichKEGG(gene = nidUP$ENTREZID, organism = "mmu", pvalueCutoff = 0.05, minGSSize = 20, maxGSSize = 1000)
 barplot(ekeUP, title = "KEGG enrichment NLS_UP")
-ekeDOWN <- enrichKEGG(gene = nidDOWN$ENTREZID, organism = "mmu", pvalueCutoff = 0.05)
+ekeDOWN <- enrichKEGG(gene = nidDOWN$ENTREZID, organism = "mmu", pvalueCutoff = 0.05, minGSSize = 20, maxGSSize = 1000)
 barplot(ekeDOWN, showCategory = 60, title = "KEGG enrichment NLS_DOWN")
 
 ekmALL <- enrichMKEGG(gene = nidALL$ENTREZID, organism = "mmu")
@@ -208,12 +209,16 @@ barplot(ekmUP, showCategory = 30, title = "KEGG enrichment NLS_UP")
 ekmDOWN <- enrichMKEGG(gene = nidDOWN$ENTREZID, organism = "mmu")
 barplot(ekmDOWN, title = "KEGG modules enrichment NLS_DOWN")
 
-epaALL <- enrichPathway(gene = nidALL$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
+
+
+# Pathways enrichment!
+epaALL <- enrichPathway(gene = nidALL$ENTREZID, organism = "mouse", pvalueCutoff = 0.05, universe = universeENTREZ, minGSSize = 20, maxGSSize = 800, readable = TRUE)
 barplot(epaALL, showCategory = 30, title = "Pathways enrichment NLS_ALL")
+dotplot(epaALL, showCategory = 30, title = "Pathways enrichment NLS_ALL")
 epaUP <- enrichPathway(gene = nidUP$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
 barplot(epaUP, title = "Pathways enrichment NLS_UP")
 epaDOWN <- enrichPathway(gene = nidDOWN$ENTREZID, organism = "mouse", pvalueCutoff = 0.05)
-barplot(epaDOWN, title = "Pathways enrichment CA05")
+barplot(epaDOWN, title = "Pathways enrichment NLS-DOWN")
 
 
 
@@ -223,7 +228,7 @@ edoUP <- enrichDGN(nidUP$ENTREZID)
 edoDOWN <- enrichDGN(nidDOWN$ENTREZID)
 # We can possibly do that if we transform to human orthologous genes.
 
-## BArplots - Dotplots.
+## Barplots - Dotplots.
 # for Jupyter use the following to produce better figures
 #options(repr.plot.width=10,repr.plot.height=14))
 barplot(ggoALL_MF3, drop = TRUE, showCategory = 200, title = "Barplot GO-MF3 NLS_ALL")
@@ -238,22 +243,28 @@ dotplot(egoDOWN_BP, showCategory = 50) + ggtitle("Dotplot for BP enrichment for 
 
 ## Enrichment Map GO plots, these plots help to understand the relationships BETWEEN GOs.
 # BF
-emapplot(egoALL_BP) + ggtitle("EMAplot BP NLS_ALL")
-emapplot(egoUP_BP) + ggtitle("EMAplot BP NLS_UP")
-emapplot(egoDOWN_BP) + ggtitle("EMAplot BP NLS_DOWN")
+emapplot(egoALL_BP) + ggtitle("GO network plot BP NLS-ALL")
+emapplot(egoUP_BP) + ggtitle("GO network plot BP NLS-UP")
+emapplot(egoDOWN_BP) + ggtitle("GO network plot BP NLS-DOWN")
 # MF
-emapplot(egoALL_MF) + ggtitle("EMAplot MF NLS_ALL")
-emapplot(egoUP_MF) + ggtitle("EMAplot MF NLS_UP")
-emapplot(egoDOWN_MF) + ggtitle("EMAplot MF NLS_DOWN")
+emapplot(egoALL_MF) + ggtitle("GO network plot MF NLS-ALL")
+emapplot(egoUP_MF) + ggtitle("GO network plot MF NLS-UP")
+emapplot(egoDOWN_MF) + ggtitle("GO network plot MF NLS-DOWN")
+
 
 
 ## Category Network (CNET) plots (perhaps the most usefull!)
-cnetplot(egoALL_MF, foldChange = geneListNLS, colorEdge = TRUE) + ggtitle("CNETplot MF ALL")
-cnetplot(egoUP_MF, foldChange = geneListNLSUP, colorEdge = TRUE) + ggtitle("CNETplot MF UP")
-cnetplot(egoDOWN_MF, foldChange = geneListNLSDOWN, colorEdge = TRUE) + ggtitle("CNETplot MF DOWN")
-cnetplot(egoALL_BP, foldChange = geneListNLS, colorEdge = TRUE) + ggtitle("CNETplot BP ALL")
-cnetplot(egoUP_BP, foldChange = geneListNLSUP, colorEdge = TRUE) + ggtitle("CNETplot BP UP")
-cnetplot(egoDOWN_BP, foldChange = geneListNLSDOWN, colorEdge = TRUE) + ggtitle("CNETplot BP DOWN")
+cnetplot(egoALL_MF, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 20) + ggtitle("Gene-concept network plot MF NLS-ALL")
+dotplot(egoALL_MF, showCategory = 20, color = "p.adjust", title = "Dotplot GO MF NLS-ALL")
+# NO MF enrichment for NLS-UP.
+cnetplot(egoDOWN_MF, foldChange = geneListNLSDOWN, colorEdge = TRUE, showCategory = 20) + ggtitle("Gene-concept Network plot MF NLS-DOWN")
+dotplot(egoDOWN_MF, showCategory = 20, color = "p.adjust", title = "Dotplot GO MF NLS-DOWN")
+cnetplot(egoALL_BP, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 20) #+ ggtitle("Gene-concept network plot BP NLS-ALL")
+dotplot(egoALL_BP, showCategory = 20, color = "p.adjust", title = "Dotplot GO BP NLS-ALL")
+cnetplot(egoUP_BP, foldChange = geneListNLSUP, colorEdge = TRUE, showCategory = 20) + ggtitle("Gene-concept network plot BP NLS-UP")
+dotplot(egoUP_BP, showCategory = 20, color = "p.adjust", title = "Dotplot GO BP NLS-UP")
+cnetplot(egoDOWN_BP, foldChange = geneListNLSDOWN, colorEdge = TRUE, showCategory = 20) + ggtitle("Gene-concept network plot BP NLS-DOWN")
+dotplot(egoDOWN_BP, showCategory = 20, color = "p.adjust", title = "Dotplot GO BP NLS-DOWN")
 
 
 ## GOplots (extended EMA plots, perhaps confusing)
@@ -266,18 +277,19 @@ goplot(egoALL_BP, showCategory = 20, geom = "text", alph = 0.50) + ggtitle("GOpl
 
 ## Perform GO gene set enrichment analysis.
 # MF
-edoALL_MF <- gseGO(geneListNLS, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+edoALL_MF <- gseGO(geneListNLS, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
 dotplot(edoALL_MF, title = "GSEA GO MF NLS_ALL")  #NO
-edoUP_MF <- gseGO(geneListNLSUP, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+edoUP_MF <- gseGO(geneListNLSUP, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
 dotplot(edoUP_MF, title = "GSEA GO MF NLS_UP")  #NO
-edoDOWN_MF <- gseGO(geneListNLSDOWN, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
-dotplot(edoDOWN_MF, title = "GSEA GO MF NLS_DOWN")  #NO
-edoALL_BP <- gseGO(geneListNLS, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
+edoDOWN_MF <- gseGO(geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "MF", keyType = "SYMBOL")
+dotplot(edoDOWN_MF, title = "GSEA res.pca.CountsGO MF NLS_DOWN")  #NO
+# BP
+edoALL_BP <- gseGO(geneListNLS, minGSSize = 20, maxGSSize = 1000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL", pvalueCutoff = 0.1)
 dotplot(edoALL_BP, title = "GSEA GO BP NLS_ALL")  #NO
 edoUP_BP <- gseGO(geneListNLSUP, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
 dotplot(edoUP_BP, title = "GSEA GO BP NLS_UP")  #NO
-edoDOWN_BP <- gseGO(geneListNLSDOWN, nPerm = 10000, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL")
-dotplot(edoDOWN_BP, title = "GSEA GO BP NLS_DOWN")
+edoDOWN_BP <- gseGO(geneListNLSDOWN, OrgDb = org.Mm.eg.db, ont = "BP", keyType = "SYMBOL", minGSSize = 20, maxGSSize = 1000, pvalueCutoff = 0.1)
+dotplot(edoDOWN_BP, title = "GSEA GO BP NLS_DOWN", showCategory = 20)
 
 
 # Heat plots, grouping and gene expression!
@@ -292,10 +304,32 @@ gseaplot2(edoDOWN_BP, geneSetID = 2, title = edoDOWN_BP$Description[2])
 gseaplot2(edoDOWN_BP, geneSetID = 1:5, title = "GSEAs of the top 5 NLS_DOWN")  # This is usefull as we can superimpose many different enrichments!
 
 
+### Quality controls ------------   --------------------------
+tpmNLS <- read.table("tpm_WT_NLSB.tab", header = TRUE)
+groupsall <- factor(c("WT", "WT", "WT", "NLS", "NLS", "NLS"))
+## PCA on TPMs
+res.pca.CPMs = PCA(t(tpmNLS), graph = FALSE)
+fviz_pca_ind(res.pca.CPMs,
+             fill.ind = groupsall, col.var = "black", repel = TRUE,
+             col.ind = groupsall, # colored by groups
+             palette = c("#00AFBB", "#E7B800"),
+             addEllipses = TRUE, # Ellipses
+             legend.title = "Groups",
+             title = "PCA plot of CPMs WT-NLS.")
+
+# On the detected protein coding genes only!
+res.pca.TPMs = PCA(t(dU), graph = FALSE)
+fviz_pca_ind(res.pca.TPMs,
+             fill.ind = groupsall, col.var = "black", repel = TRUE,
+             col.ind = groupsall, # colored by groups
+             palette = c("#00AFBB", "#E7B800"),
+             addEllipses = TRUE, # Ellipse
+             legend.title = "Groups",
+             title = "PCA plot of TPMs WT-NLS.")
+
 
 ### Clustering --------------------------------------------
 # Collect data.
-dd <- read.table("tpm_WT_NLSB.tab", header = TRUE)
 ddNLS <- dd[namesNLS, ]
 ddNLSUP <- dd[namesNLSUP, ]
 ddNLSDOWN <- dd[namesNLSDOWN, ]
@@ -312,16 +346,16 @@ summary(dNLSUP)
 #dKK1 <- log(ddKK1[,c(1,2,3,7,8,9)])
 #dCA05 <- log(ddCA05[,c(1,2,3,4,5,6)])
 
-colnames(dNLS) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
-colnames(dNLSUP) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
-colnames(dNLSDOWN) <- c("WT1", "WT2", "WT3", "NLS", "NLS", "NLS")
+colnames(dNLS) <- c("WT1", "WT2", "WT3", "NLS1", "NLS2", "NLS3")
+colnames(dNLSUP) <- c("WT1", "WT2", "WT3", "NLS1", "NLS2", "NLS3")
+colnames(dNLSDOWN) <- c("WT1", "WT2", "WT3", "NLS1", "NLS2", "NLS3")
 
 
 my_palette <- brewer.pal(n = 11, name = "RdYlGn")
 ### For ALL the NLS DEGs
-## Hierarhical clustering of NLS DEGs
+## Hierarchical clustering of NLS DEGs
 # Do the clustering.
-clust_NLS <- hclust(dist(dNLS), method = "centroid")
+clust_NLS <- hclust(dist(dNLS), method = "average")
 # define clusters (hard thresold)
 NLS_Clusts <- cutree(clust_NLS, k = 4)
 # Colour vector for clusters side bar.
@@ -330,13 +364,14 @@ myClusters_NLS <- myClustCols[NLS_Clusts]
 heatmap.2(as.matrix(dNLS), main = "Hierarchical clustering of NLS DEGs.", Rowv = as.dendrogram(clust_NLS), Colv = FALSE, dendrogram = "row", scale = "row", col = my_palette, cexCol = 1.5, cexRow = 0.4, key.title = NA, keysize = 0.8, key.xlab = NA, ylab = "Genes", RowSideColors = myClusters_NLS)
 
 
-## Determine number of clusters by plotting sum of squares whitnin groups
+## Determine number of clusters by plotting sum of squares within groups
 wssNLS <- (nrow(dNLS))*sum(apply(dNLS,2,var))
 for (i in 2:15) wssNLS[i] <- sum(kmeans(dNLS, centers = i, iter.max = 100, nstart = 250)$withinss)
 my_palette <- brewer.pal(n = 11, name = "RdYlGn")
 plot(1:15, wssNLS, type = "b", xlab = "Number of Clusters", ylab = "Within groups sum of squares CA")
 
 ## Perform k-means clustering
+my_palette <- colorRampPalette(brewer.pal(n = 11, name = "RdYlGn"))
 # Kmeans NLS ALL.
 set.seed(1)  # Always set the same random seed.
 kmNLS <- kmeans(as.matrix(dNLS), 2, iter.max = 200, nstart = 20)
@@ -347,7 +382,10 @@ dfclNLS$idsort <- dfclNLS$id[order(dfclNLS$cluster)]
 dfclNLS$idsort <- order(dfclNLS$idsort)
 clusterColsNLS <- as.character(sort(kmNLS$cluster))
 ## Plot k-means clustering.
-heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLS, ylab = "Genes", main = "k-means clustering of NLS tmp.")
+heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.5, cexRow = 0.3, ylab = "Genes", main = "k-means (2) clustering of NLS TPM.")
+# For the paper
+heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.1, cexRow = 0.5, ylab = "Genes")
+legend("left", legend = round(seq(range(dNLS)[1], range(dNLS)[2], length.out =16)), fill = my_palette(16), cex = 0.8, bty = "n", inset = 0.07, title = "TPM")
 
 # Kmeans NLS-UP.
 kmNLSUP <- kmeans(as.matrix(dNLSUP), 4, iter.max = 200, nstart = 20)
@@ -358,13 +396,13 @@ dfclNLSUP$idsort <- dfclNLSUP$id[order(dfclNLSUP$cluster)]
 dfclNLSUP$idsort <- order(dfclNLSUP$idsort)
 clusterColsNLSUP <- as.character(sort(kmNLSUP$cluster))
 ## Plot k-means clustering.
-heatmap(as.matrix(dNLSUP)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
+heatmap(as.matrix(dNLSUP)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
 
 
 # The PAM method.
-pam_NLS <- pam(dNLS, 4)
+pam_NLS <- pam(dNLS, 2)
 ## Plot PAM clustering.
-heatmap(as.matrix(dNLS)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette, Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
+heatmap(as.matrix(dNLS)[order(kmNLSUP$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.5, cexRow = 0.4, RowSideColors = clusterColsNLSUP, ylab = "Genes", main = "k-means clustering of NLS-UP tmp.")
 
 ## Perform some clustering tests and visulaisations.
 fviz_cluster(pam_NLS, data = dNLS, ellipse.type = "convex") + theme_minimal()
@@ -375,5 +413,116 @@ mclust_NLS <- Mclust(dNLS)
 summary(mclust_NLS)
 
 fviz_cluster(mclust_NLS, data = dNLS, ellipse.type = "convex") + theme_minimal()
+# Clustering raw data of DEGs is not so informative.
 
-## Clustering raw data of DEGs is not so informative.
+
+
+## Correlation - co-expression studies. -----------------
+corrDNLS <- cor(t(dNLS))
+# Soft threshold, power.
+corrDNLS_thres <- corrDNLS**9
+corrplot(corrDNLS_thres, diag = FALSE,
+         order = "hclust", hclust.method = "ward.D2",
+         cl.pos = "n", tl.cex = 0.7,
+         main = "GE clustered correlation matrix of DEGs",
+         mar = c(0,0,1,0), cex.main = 0.75, sig.level = 0.001, insig = "blank",
+         addgrid.col = NA)
+# Hard threshold 0.9 correlation.
+corrDNLS_thresH <- corrDNLS_thres
+corrDNLS_thresH[abs(corrDNLS_thresH) < 0.9 | corrDNLS_thresH == 1.0 ] = 0
+idx <- colnames(corrDNLS_thresH[,!!colSums(corrDNLS_thresH)])
+corrDNLS_thresHc <- corrDNLS_thresH[idx, idx]
+corrplot(corrDNLS_thresHc, diag = FALSE,
+         order = "hclust", hclust.method = "ward.D2",
+         cl.pos = "n", tl.cex = 0.7,
+         main = "GE clustered correlation matrix of DEGs HARD",
+         mar = c(0,0,1,0), cex.main = 0.75, sig.level = 0.001, insig = "blank",
+         addgrid.col = NA)
+
+# Do the correlation clustering
+corrDNLS_clust <- hclust(dist(corrDNLS_thresHc), method = "ward.D2")
+clustsDNS <- cutree(corrDNLS_clust, k = 5)
+
+clustCorrDNS <- clusterCorr(corrDNLS_thresHc, clustsDNS)
+clustCorrMatDNLS <- generate_cluster_cor_mat(corrDNLS_thresHc, clustsDNS)
+# these two are the SAME!
+
+corrplot(clustCorrDNS, diag = FALSE,
+         order = "hclust", hclust.method = "ward.D2",
+         cl.pos = "n", tl.cex = 0.7,
+         main = "GE clustered correlation matrix of DEGs Clustered",
+         mar = c(0,0,1,0), cex.main = 0.75, sig.level = 0.001, insig = "blank",
+         addgrid.col = NA)
+
+# By observing the cluster correlation we found that cluster1 does not contain any informative correlation so we will remove it and re-plot the clustered correlation matrix.
+clustDNLSclean <- clustsDNS[clustsDNS %in% c(2,3,4,5)]
+corrDNLS_clean <- corrDNLS_thresHc[names(clustDNLSclean), names(clustDNLSclean)]
+
+clustCorrDNLS_clean <- clusterCorr(corrDNLS_clean, clustDNLSclean)
+corrplot(clustCorrDNLS_clean, diag = FALSE,
+         order = "hclust", hclust.method = "ward.D2",
+         cl.pos = "n", tl.cex = 0.8,
+         #main = "GE clustered correlation matrix of DEGs Clustered_clean",
+         mar = c(0,0,1,0), cex.main = 1, sig.level = 0.001, insig = "blank",
+         addgrid.col = NA, addrect = 4)
+
+
+# Get the HRNPC targets.
+targets_3pUTR <- scan("utr_Analyses/anal15lFC/rbpMAP_UTRs/hrnpc_3pUTR_targets_NAMES.txt", what = "char")
+targets_5pUTR <- scan("utr_Analyses/anal15lFC/rbpMAP_UTRs/hrnpc_5pUTR_targets_NAMES.txt", what = "char")
+
+# Get the euler Venn diagram.
+targets_UTR <- list("3'UTRs" = targets_3pUTR, "5'UTRs" = targets_5pUTR)
+plot(euler(targets_UTR, shape = "ellipse"), quantities = TRUE)
+
+# Retrieve the cluster names.
+cluster2 <- names(clustsDNS[clustsDNS == 2])
+cluster3 <- names(clustsDNS[clustsDNS == 3])
+cluster4 <- names(clustsDNS[clustsDNS == 4])
+cluster5 <- names(clustsDNS[clustsDNS == 5])
+
+clusts_3pUTRs <- list("3'UTRs" = targets_3pUTR, "Clust2" = cluster2, "Clust3" = cluster3, "Clust4" = cluster4, "Clust5" = cluster5)
+plot(euler(clusts_3pUTRs, shape = "ellipse"), quantities = TRUE)
+
+clusts_5pUTRs <- list("5'UTRs" = targets_5pUTR, "Clust2" = cluster2, "Clust3" = cluster3, "Clust4" = cluster4, "Clust5" = cluster5)
+plot(euler(clusts_5pUTRs, shape = "ellipse"), quantities = TRUE)
+
+# GO enrichments of UTR HRNPC targets.
+target3UTRsENTREZ <- nidALL[nidALL$SYMBOL %in% targets_3pUTR,]$ENTREZID
+egoTarg3UTR <- enrichGO(gene = target3UTRsENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.01, readable = TRUE)
+dotplot(egoTarg3UTR, title = "GO ALL enrichment of 3'UTR HRNPC targets", showCategory = 30)
+
+
+
+## GO Enrichment of clusters ------------
+cluster3ENTREZ <- nidALL[nidALL$SYMBOL %in% cluster3,]$ENTREZID
+cluster4ENTREZ <- nidALL[nidALL$SYMBOL %in% cluster4,]$ENTREZID
+cluster5ENTREZ <- nidALL[nidALL$SYMBOL %in% cluster5,]$ENTREZID
+cluster2ENTREZ <- nidALL[nidALL$SYMBOL %in% cluster2,]$ENTREZID
+
+
+# Perform the enrichment analysis.
+egoClust4 <- enrichGO(gene = cluster4ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoClust4, title = "GO ALL enrichment of Clust4", showCategory = 30)
+egoClust3 <- enrichGO(gene = cluster3ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoClust3, title = "GO ALL enrichment of Clust3", showCategory = 30)
+egoClust5 <- enrichGO(gene = cluster5ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoClust5, title = "GO ALL enrichment of Clust5", showCategory = 30)
+egoClust2 <- enrichGO(gene = cluster2ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 200, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+dotplot(egoClust2, title = "GO ALL enrichment of Clust2", showCategory = 30)
+
+
+
+
+
+
+
+
+# TRIM71 analysis from ANOTHER PAPER -------------
+namesTRIM71 <- scan("diffExpr_mircroarray_TRIM71KD.txt", what = "character")
+trim71all <- bitr(namesTRIM71, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+
+egoTrimALL_BP <-  enrichGO(gene = trim71all$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
+egoTrimALL_MF <-  enrichGO(gene = trim71all$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, ont = "MF", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE) # No enrichment.
+
+dotplot(egoTrimALL_BP) #, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 20) + ggtitle("Gene-concept network plot MF NLS-ALL")
