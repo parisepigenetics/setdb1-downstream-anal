@@ -19,6 +19,7 @@ library(NetCluster)
 library(eulerr)
 library(ggcorrplot)
 
+
 ### Load/preprocess data ----------------------------------
 # We have preselected for logFC1 and significant genes.
 d <- read.table("DESeq2_Genes_NLS_vs_WT.tab", header = TRUE)
@@ -165,9 +166,11 @@ dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP", showCategory = 30)
 
 
 ## Perform enrichment in GO ALL categories.
-egoALL <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.01, readable = TRUE)
-dotplot(egoALL, showCategory = 30, title = "EnrichGO ALL ALL")
-cnetplot(egoALL, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 20) #+ ggtitle("Gene-concept network plot NLS ALL")
+egoALL <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.02, readable = TRUE)
+dotplot(egoALL, showCategory = 40, title = "EnrichGO ALL ALL", color = "p.adjust", x = "GeneRatio")
+cnetplot(egoALL, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 25) + ggtitle("Gene-concept network plot NLS ALL")
+# CNETplot for the paper.
+cnetplot(egoALL, foldChange = geneListNLS, colorEdge = TRUE, showCategory = 16) #+ ggtitle("Gene-concept network plot NLS ALL")
 
 egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 600, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
 dotplot(egoUP_BP, title = "EnrichGO UP BP", showCategory = 30)
@@ -301,7 +304,7 @@ ridgeplot(edoDOWN_BP)
 # GSEA plots, USEFULL more difficult to interpret.
 gseaplot2(edoDOWN_BP, geneSetID = 1, title = edoDOWN_BP$Description[1])
 gseaplot2(edoDOWN_BP, geneSetID = 2, title = edoDOWN_BP$Description[2])
-gseaplot2(edoDOWN_BP, geneSetID = 1:5, title = "GSEAs of the top 5 NLS_DOWN")  # This is usefull as we can superimpose many different enrichments!
+gseaplot2(edoDOWN_BP, geneSetID = 1:5, title = "GSEAs of the top 5 NLS_DOWN")  # This is useful as we can superimpose many different enrichments!
 
 
 ### Quality controls ------------   --------------------------
@@ -384,8 +387,8 @@ clusterColsNLS <- as.character(sort(kmNLS$cluster))
 ## Plot k-means clustering.
 heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.5, cexRow = 0.3, ylab = "Genes", main = "k-means (2) clustering of NLS TPM.")
 # For the paper
-heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.1, cexRow = 0.5, ylab = "Genes")
-legend("left", legend = round(seq(range(dNLS)[1], range(dNLS)[2], length.out =16)), fill = my_palette(16), cex = 0.8, bty = "n", inset = 0.07, title = "TPM")
+heatmap(as.matrix(dNLS)[order(kmNLS$cluster),], Rowv = NA, col = my_palette(16), Colv = NA, cexCol = 1.5, cexRow = 0.8, ylab = "Genes", margins = c(0.5, 5.2), labCol = "")
+legend("topleft", legend = round(seq(range(dNLS)[1], range(dNLS)[2], length.out =13)), fill = my_palette(16), border = FALSE, cex = 1, bty = "n", inset = 0.04, title = "TPM")
 
 # Kmeans NLS-UP.
 kmNLSUP <- kmeans(as.matrix(dNLSUP), 4, iter.max = 200, nstart = 20)
@@ -454,6 +457,7 @@ corrplot(clustCorrDNS, diag = FALSE,
          mar = c(0,0,1,0), cex.main = 0.75, sig.level = 0.001, insig = "blank",
          addgrid.col = NA)
 
+
 # By observing the cluster correlation we found that cluster1 does not contain any informative correlation so we will remove it and re-plot the clustered correlation matrix.
 clustDNLSclean <- clustsDNS[clustsDNS %in% c(2,3,4,5)]
 corrDNLS_clean <- corrDNLS_thresHc[names(clustDNLSclean), names(clustDNLSclean)]
@@ -461,11 +465,13 @@ corrDNLS_clean <- corrDNLS_thresHc[names(clustDNLSclean), names(clustDNLSclean)]
 clustCorrDNLS_clean <- clusterCorr(corrDNLS_clean, clustDNLSclean)
 corrplot(clustCorrDNLS_clean, diag = FALSE,
          order = "hclust", hclust.method = "ward.D2",
-         cl.pos = "n", tl.cex = 0.8,
+         tl.cex = 0.4, tl.col = "black", tl.pos = "t", tl.srt = 45,
+         cl.pos = "r", cl.ratio = 0.1, cl.offset = 0.2, cl.align.text
+ = "l",
          #main = "GE clustered correlation matrix of DEGs Clustered_clean",
-         mar = c(0,0,1,0), cex.main = 1, sig.level = 0.001, insig = "blank",
+         mar = c(0,0,0,0), cex.main = 0.5, sig.level = 0.001, insig = "blank",
          addgrid.col = NA, addrect = 4)
-
+# Plot for the paper figure.
 
 # Get the HRNPC targets.
 targets_3pUTR <- scan("utr_Analyses/anal15lFC/rbpMAP_UTRs/hrnpc_3pUTR_targets_NAMES.txt", what = "char")
@@ -510,6 +516,15 @@ egoClust5 <- enrichGO(gene = cluster5ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 1
 dotplot(egoClust5, title = "GO ALL enrichment of Clust5", showCategory = 30)
 egoClust2 <- enrichGO(gene = cluster2ENTREZ, OrgDb = org.Mm.eg.db, minGSSize = 10, maxGSSize = 200, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
 dotplot(egoClust2, title = "GO ALL enrichment of Clust2", showCategory = 30)
+# For the paper.
+dotplot(egoClust2, showCategory = 16)
+
+
+
+# Get the TPM DEGs table
+tpmDEGSs <- tpmNLS[namesNLS,]
+write.table(tpmDEGSs, "tpm_NLS_DEGs15lfc.tab", sep = "\t", quote = FALSE)
+
 
 
 
