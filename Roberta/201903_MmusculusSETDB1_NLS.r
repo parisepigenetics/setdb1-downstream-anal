@@ -445,6 +445,9 @@ corrplot(corrDNLS_thresHc, diag = FALSE,
 # Do the correlation clustering
 corrDNLS_clust <- hclust(dist(corrDNLS_thresHc), method = "ward.D2")
 clustsDNS <- cutree(corrDNLS_clust, k = 5)
+# Put this in a data frame to produce the supplementary table.
+clustDNSdf <- data.frame(row.names = names(sort(clustsDNS)), "Cluster" = sort(clustsDNS))
+write.table(clustDNSdf, file = "degCorrelationClusters.csv", quote = FALSE)
 
 clustCorrDNS <- clusterCorr(corrDNLS_thresHc, clustsDNS)
 clustCorrMatDNLS <- generate_cluster_cor_mat(corrDNLS_thresHc, clustsDNS)
@@ -465,10 +468,9 @@ corrDNLS_clean <- corrDNLS_thresHc[names(clustDNLSclean), names(clustDNLSclean)]
 clustCorrDNLS_clean <- clusterCorr(corrDNLS_clean, clustDNLSclean)
 corrplot(clustCorrDNLS_clean, diag = FALSE,
          order = "hclust", hclust.method = "ward.D2",
-         tl.cex = 0.4, tl.col = "black", tl.pos = "t", tl.srt = 45,
-         cl.pos = "r", cl.ratio = 0.1, cl.offset = 0.2, cl.align.text
- = "l",
-         #main = "GE clustered correlation matrix of DEGs Clustered_clean",
+         tl.cex = 0.5, tl.col = "black", tl.pos = "t", tl.srt = 45,
+         cl.pos = "r", cl.ratio = 0.1, cl.offset = 0.2, cl.align.text = "l",
+         main = "GE clustered correlation matrix of DEGs Clustered_clean",
          mar = c(0,0,0,0), cex.main = 0.5, sig.level = 0.001, insig = "blank",
          addgrid.col = NA, addrect = 4)
 # Plot for the paper figure.
