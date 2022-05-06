@@ -359,7 +359,7 @@ my_palette <- brewer.pal(n = 11, name = "RdYlGn")
 ## Hierarchical clustering of NLS DEGs
 # Do the clustering.
 clust_NLS <- hclust(dist(dNLS), method = "average")
-# define clusters (hard thresold)
+# define clusters (hard threshold)
 NLS_Clusts <- cutree(clust_NLS, k = 4)
 # Colour vector for clusters side bar.
 myClustCols <- rainbow(length(unique(NLS_Clusts)))
