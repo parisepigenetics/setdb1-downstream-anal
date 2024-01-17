@@ -11,7 +11,7 @@ library(gplots)
 library(factoextra)
 library(cluster)
 library(mclust)
-library(RDAVIDWebService)
+#library(RDAVIDWebService)
 library(Factoshiny)
 library(FactoMineR)
 library(corrplot)
@@ -164,7 +164,6 @@ egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize 
 dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP", showCategory = 30)
 
 
-
 ## Perform enrichment in GO ALL categories.
 egoALL <- enrichGO(gene = nidALL$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 500, ont = "ALL", pAdjustMethod = "BH", pvalueCutoff = 0.02, readable = TRUE)
 dotplot(egoALL, showCategory = 40, title = "EnrichGO ALL ALL", color = "p.adjust", x = "GeneRatio")
@@ -176,7 +175,6 @@ egoUP_BP <- enrichGO(gene = nidUP$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20
 dotplot(egoUP_BP, title = "EnrichGO UP BP", showCategory = 30)
 egoDOWN_BP <- enrichGO(gene = nidDOWN$ENTREZID, OrgDb = org.Mm.eg.db, minGSSize = 20, maxGSSize = 800, ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, readable = TRUE)
 dotplot(egoDOWN_BP, title = "EnrichGO DOWN BP", showCategory = 30)
-
 
 
 ## Perform gene set enrichment analysis in GO ALL.
@@ -224,7 +222,6 @@ epaDOWN <- enrichPathway(gene = nidDOWN$ENTREZID, organism = "mouse", pvalueCuto
 barplot(epaDOWN, title = "Pathways enrichment NLS-DOWN")
 
 
-
 ### Visualisations ----------------------------------------
 edoALL <- enrichDGN(nidALL$ENTREZID)
 edoUP <- enrichDGN(nidUP$ENTREZID)
@@ -253,7 +250,6 @@ emapplot(egoDOWN_BP) + ggtitle("GO network plot BP NLS-DOWN")
 emapplot(egoALL_MF) + ggtitle("GO network plot MF NLS-ALL")
 emapplot(egoUP_MF) + ggtitle("GO network plot MF NLS-UP")
 emapplot(egoDOWN_MF) + ggtitle("GO network plot MF NLS-DOWN")
-
 
 
 ## Category Network (CNET) plots (perhaps the most usefull!)
@@ -307,6 +303,7 @@ gseaplot2(edoDOWN_BP, geneSetID = 2, title = edoDOWN_BP$Description[2])
 gseaplot2(edoDOWN_BP, geneSetID = 1:5, title = "GSEAs of the top 5 NLS_DOWN")  # This is useful as we can superimpose many different enrichments!
 
 
+
 ### Quality controls ------------   --------------------------
 tpmNLS <- read.table("tpm_WT_NLSB.tab", header = TRUE)
 groupsall <- factor(c("WT", "WT", "WT", "NLS", "NLS", "NLS"))
@@ -329,6 +326,7 @@ fviz_pca_ind(res.pca.TPMs,
              addEllipses = TRUE, # Ellipse
              legend.title = "Groups",
              title = "PCA plot of TPMs WT-NLS.")
+
 
 
 ### Clustering --------------------------------------------
@@ -529,9 +527,18 @@ write.table(tpmDEGSs, "tpm_NLS_DEGs15lfc.tab", sep = "\t", quote = FALSE)
 
 
 
+# Quality control against Billodeau's data and later produced data newRNASeq19 and RNASeq22 datta
+bilD <- scan("setdb1_Targets_Bilodeau.txt", what = character())
+#degsWTNLS19new
+degsWTNLS22 <- scan("/home/costas/sysBiol_UParis/201703_KMTs_Slimane/roberta_NLSsetdb1/rnaSeq_2022/degsNLSWT_treat05_GeneNames.txt", what = character())
+listBil <- list(bilodeau = bilD, WT_NLS = namesNLS)
+plot(euler(listBil, shape = "ellipse"), quantities = TRUE, main = "Overlap Bilodeau")
+listRNASeq <- list(degsWTNLSoldOld = namesNLS, RNASeq2022 = degsWTNLS22)
+plot(euler(listRNASeq, shape = "ellipse"), quantities = TRUE, main = "Overlap OLD-OLD NEW-NEW")
+write(intersect(bilD, namesNLS), file="bilodeau_OLDRNAseq_overlap.txt")
 
-
-
+# Overlap Billodeau UP and DOWN
+overBil <- intersect( bilD, namesNLS)
 
 
 
